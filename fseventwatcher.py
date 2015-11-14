@@ -70,9 +70,9 @@ class FSEventWatcher(object):
         self.rpc = rpc
         self.programs = programs
         self.any = any
-        self.watch_events = watch_events
         self.path = path
         self.recursive = recursive
+        self.fs_event_handler = PollableFileSystemEventHandler(watch_events)
         self.stdin = sys.stdin
         self.stdout = sys.stdout
         self.stderr = sys.stderr
@@ -110,14 +110,13 @@ class FSEventWatcher(object):
 
     def runforever(self):
         observer = Observer()
-        fs_event_handler = PollableFileSystemEventHandler(self.watch_events)
-        observer.schedule(fs_event_handler, self.path, self.recursive)
+        observer.schedule(self.fs_event_handler, self.path, self.recursive)
         observer.start()
         while True:
             headers, payload = childutils.listener.wait(self.stdin, self.stdout)
             if (
                 headers["eventname"].startswith("TICK") and
-                fs_event_handler.reset_activity_occurred()
+                self.fs_event_handler.unmark_activity_occurred()
             ):
                 self._restart_processes()
             childutils.listener.ok(self.stdout)
