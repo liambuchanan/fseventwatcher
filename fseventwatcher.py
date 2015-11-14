@@ -128,8 +128,6 @@ def main():
     import argparse
     import os
     parser = argparse.ArgumentParser()
-    parser.add_argument("path")
-    parser.add_argument("-r", "--recursive", action="store_true")
     parser.add_argument("-p", "--programs", type=str, nargs="*", metavar="PROGRAM")
     parser.add_argument("-a", "--any", action="store_true")
     parser.add_argument("--watch-moved", action="store_true")
@@ -137,6 +135,8 @@ def main():
     parser.add_argument("--watch-deleted", action="store_true")
     parser.add_argument("--watch-modified", action="store_true")
     parser.add_argument("--watch-all", action="store_true")
+    parser.add_argument("path")
+    parser.add_argument("-r", "--recursive", action="store_true")
     args = parser.parse_args()
     if not(os.path.exists(args.path)):
         parser.error("Must specify a path which exists.")
