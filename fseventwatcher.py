@@ -82,6 +82,7 @@ class FSEventWatcher(object):
             specs = self.rpc.supervisor.getAllProcessInfo()
         except Exception as e:
             print("Unable to get process info: {}. No action taken.".format(e), file=self.stderr)
+            self.fs_event_handler.mark_activity_occurred()  # remark to avoid swallowing fs events
         else:
             waiting = set(self.programs)
             for spec in specs:
