@@ -15,16 +15,16 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 
-WatchFileSystemEvents = namedtuple(
+WatchedFileSystemEvents = namedtuple(
     "WatchFileSystemEvents",
     ("moved", "created", "deleted", "modified")
 )
 
 
 class PollableFileSystemEventHandler(FileSystemEventHandler):
-    def __init__(self, watch_events):
+    def __init__(self, watched_events):
         super(PollableFileSystemEventHandler, self).__init__()
-        self.watch_events = watch_events
+        self.watched_events = watched_events
         self._activity_occurred = False
         self._lock = threading.Lock()
 
@@ -42,22 +42,22 @@ class PollableFileSystemEventHandler(FileSystemEventHandler):
 
     def on_moved(self, event):
         super(PollableFileSystemEventHandler, self).on_moved(event)
-        if self.watch_events.moved:
+        if self.watched_events.moved:
             self.mark_activity_occurred()
 
     def on_created(self, event):
         super(PollableFileSystemEventHandler, self).on_created(event)
-        if self.watch_events.created:
+        if self.watched_events.created:
             self.mark_activity_occurred()
 
     def on_deleted(self, event):
         super(PollableFileSystemEventHandler, self).on_deleted(event)
-        if self.watch_events.deleted:
+        if self.watched_events.deleted:
             self.mark_activity_occurred()
 
     def on_modified(self, event):
         super(PollableFileSystemEventHandler, self).on_modified(event)
-        if self.watch_events.modified:
+        if self.watched_events.modified:
             self.mark_activity_occurred()
 
 
@@ -155,9 +155,9 @@ def main():
             raise
 
     if args.watch_all:
-        watch_events = WatchFileSystemEvents(True, True, True, True)
+        watch_events = WatchedFileSystemEvents(True, True, True, True)
     else:
-        watch_events = WatchFileSystemEvents(
+        watch_events = WatchedFileSystemEvents(
             args.watch_moved, args.watch_created, args.watch_deleted, args.watch_modified
         )
 
