@@ -1,0 +1,8 @@
+test:
+    - recursive vs non-recursive paths
+    - all programs vs selected programs
+    - different event watcher combinations
+add:
+    - dither to restart
+    - nicer help doc
+    - support for restarting on events for files-only or dirs-only
