@@ -98,7 +98,7 @@ class FSEventWatcher(object):
                         try:
                             self.rpc.supervisor.startProcess(namespec)
                         except xmlrpclib.Fault as e:
-                            print("Unable to stop process {}: {}.".format(namespec, e), file=self.stderr)
+                            print("Unable to start process {}: {}.".format(namespec, e), file=self.stderr)
                         else:
                             print("Restarted process {}.".format(namespec), file=self.stderr)
                     else:
