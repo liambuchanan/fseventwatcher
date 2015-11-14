@@ -33,7 +33,7 @@ class PollableFileSystemEventHandler(FileSystemEventHandler):
             self._activity_occurred = True
             return res
 
-    def reset_activity_occurred(self):
+    def unmark_activity_occurred(self):
         with self._lock:
             res = self._activity_occurred
             self._activity_occurred = False
