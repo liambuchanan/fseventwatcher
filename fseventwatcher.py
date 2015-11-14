@@ -63,8 +63,7 @@ class PollableFileSystemEventHandler(FileSystemEventHandler):
 class FSEventWatcher(object):
     def __init__(self, rpc, programs, any, watch_events, path, recursive):
         """
-        Possible additions
-            - specifying whether files/dirs/both should be watched
+        Possible additions (see superlance httpok)
             - eager flag
             - email/sendmail
             - coredir/gcore
