@@ -88,7 +88,7 @@ class FSEventWatcher(object):
                 name = spec["name"]
                 namespec = make_namespec(spec["group"], name)
                 if self.any or name in waiting or namespec in waiting:
-                    if spec["state"] in ProcessStates.RUNNING:
+                    if spec["state"] is ProcessStates.RUNNING:
                         print("Restarting process: {}.".format(namespec), file=self.stderr)
                         try:
                             self.rpc.supervisor.stopProcess(namespec)
