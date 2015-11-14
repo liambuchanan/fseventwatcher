@@ -126,7 +126,7 @@ def main():
     import argparse
     import os
     parser = argparse.ArgumentParser()
-    parser.add_argument("-p", "--programs", nargs="?")
+    parser.add_argument("-p", "--programs", type=str, nargs="*", metavar="PROGRAM")
     parser.add_argument("-a", "--any", action="store_true")
     parser.add_argument("-r", "--recursive", action="store_true")
     parser.add_argument("path")
