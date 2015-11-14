@@ -63,12 +63,6 @@ class PollableFileSystemEventHandler(FileSystemEventHandler):
 
 class FSEventWatcher(object):
     def __init__(self, rpc, programs, any, watch_events, path, recursive):
-        """
-        Possible additions (see superlance httpok)
-            - eager flag
-            - email/sendmail
-            - coredir/gcore
-        """
         self.rpc = rpc
         self.programs = programs
         self.any = any
@@ -127,23 +121,30 @@ class FSEventWatcher(object):
 def main():
     import argparse
     import os
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser("Supervisor event listener.")
     parser.add_argument("-p", "--programs", type=str, nargs="*", metavar="PROGRAM")
     parser.add_argument("-a", "--any", action="store_true")
+    parser.add_argument("-f", "--paths", type=str, nargs="+", metavar="PATH", required=True)
+    parser.add_argument("-r", "--recursive", action="store_true")
     parser.add_argument("--watch-moved", action="store_true")
     parser.add_argument("--watch-created", action="store_true")
     parser.add_argument("--watch-deleted", action="store_true")
     parser.add_argument("--watch-modified", action="store_true")
     parser.add_argument("--watch-all", action="store_true")
-    parser.add_argument("path")
-    parser.add_argument("-r", "--recursive", action="store_true")
+    parser.add_argument("--files-only", action="store_true")
+    parser.add_argument("--dirs-only", action="store_true")
+    parser.add_argument("--regex")
+    parser.add_argument("--dither", type=int)
     args = parser.parse_args()
-    if not(os.path.exists(args.path)):
-        parser.error("Must specify a path which exists.")
     if not(args.programs or args.any):
         parser.error("Must specify either -p, --programs or -a, --any.")
+    for path in args.paths:
+        if not(os.path.exists(path)):
+            parser.error("All paths must be valid.")
     if not(args.watch_moved or args.watch_created or args.watch_deleted or args.watch_modified or args.watch_all):
         parser.error("Must specify which event/s to watch.")
+    if args.files_only and args.dirs_only:
+        parser.error("Must specify one/none of --files-only and --dirs-only.")
 
     try:
         rpc = childutils.getRPCInterface(os.environ)
