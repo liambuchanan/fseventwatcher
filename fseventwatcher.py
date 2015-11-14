@@ -126,11 +126,22 @@ def main():
     import argparse
     import os
     parser = argparse.ArgumentParser()
+    parser.add_argument("path")
+    parser.add_argument("-r", "--recursive", action="store_true")
     parser.add_argument("-p", "--programs", type=str, nargs="*", metavar="PROGRAM")
     parser.add_argument("-a", "--any", action="store_true")
-    parser.add_argument("-r", "--recursive", action="store_true")
-    parser.add_argument("path")
+    parser.add_argument("--watch-moved", action="store_true")
+    parser.add_argument("--watch-created", action="store_true")
+    parser.add_argument("--watch-deleted", action="store_true")
+    parser.add_argument("--watch-modified", action="store_true")
+    parser.add_argument("--watch-all", action="store_true")
     args = parser.parse_args()
+    if not(os.path.exists(args.path)):
+        parser.error("Must specify a path which exists.")
+    if not(args.programs or args.any):
+        parser.error("Must specify either -p, --programs or -a, --any.")
+    if not(args.watch_moved or args.watch_created or args.watch_deleted or args.watch_modified or args.watch_all):
+        parser.error("Must specify which event/s to watch.")
 
     try:
         rpc = childutils.getRPCInterface(os.environ)
@@ -141,9 +152,14 @@ def main():
         else:
             raise
 
-    fseventwatcher = FSEventWatcher(
-        rpc, args.programs, args.any, WatchFileSystemEvents(True, True, True, True), args.path, args.recursive
-    )
+    if args.watch_all:
+        watch_events = WatchFileSystemEvents(True, True, True, True)
+    else:
+        watch_events = WatchFileSystemEvents(
+            args.watch_moved, args.watch_created, args.watch_deleted, args.watch_modified
+        )
+
+    fseventwatcher = FSEventWatcher(rpc, args.programs or [], args.any, watch_events, args.path, args.recursive)
     fseventwatcher.runforever()
 
 
