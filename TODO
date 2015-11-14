@@ -7,3 +7,4 @@ add:
     - nicer help doc
     - support for restarting on events for files-only or dirs-only
     - regex filters for files/dirs to watch
+    - allow specifying multiple paths
