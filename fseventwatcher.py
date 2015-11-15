@@ -106,10 +106,8 @@ class FSEventWatcher(object):
         observer.start()
         while True:
             headers, payload = childutils.listener.wait(self.stdin, self.stdout)
-            if (
-                headers["eventname"].startswith("TICK") and
-                self.fs_event_handler.unmark_activity_occurred()
-            ):
+            if (headers["eventname"].startswith("TICK") and
+                    self.fs_event_handler.unmark_activity_occurred()):
                 self._restart_processes()
             childutils.listener.ok(self.stdout)
 
@@ -166,12 +164,10 @@ def main():
         fs_event_handler = PollableFileSystemEventHandler(True, True, True, True)
     else:
         fs_event_handler = PollableFileSystemEventHandler(
-            args.watch_moved, args.watch_created, args.watch_deleted, args.watch_modified
-        )
+            args.watch_moved, args.watch_created, args.watch_deleted, args.watch_modified)
 
     fseventwatcher = FSEventWatcher(
-        rpc, args.programs or [], args.any_program, fs_event_handler, args.path, args.recursive
-    )
+        rpc, args.programs or [], args.any_program, fs_event_handler, args.path, args.recursive)
     fseventwatcher.runforever()
 
 
