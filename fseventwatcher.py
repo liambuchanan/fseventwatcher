@@ -58,11 +58,11 @@ class PollableFileSystemEventHandler(FileSystemEventHandler):
 
 
 class FSEventWatcher(object):
-    def __init__(self, rpc, programs, any_program, path, recursive, fs_event_handler):
+    def __init__(self, rpc, programs, any_program, paths, recursive, fs_event_handler):
         self.rpc = rpc
         self.programs = programs
         self.any_program = any_program
-        self.path = path
+        self.paths = paths
         self.recursive = recursive
         self.fs_event_handler = fs_event_handler
         self.stdin = sys.stdin
@@ -102,7 +102,8 @@ class FSEventWatcher(object):
 
     def runforever(self):
         observer = Observer()
-        observer.schedule(self.fs_event_handler, self.path, self.recursive)
+        for path in self.paths:
+            observer.schedule(self.fs_event_handler, path, self.recursive)
         observer.start()
         while True:
             headers, payload = childutils.listener.wait(self.stdin, self.stdout)
@@ -125,7 +126,7 @@ def main():
     parser.add_argument("-f", "--paths", type=str, nargs="+", metavar="PATH", required=True,
                         help="Path to watch for file system events.")
     parser.add_argument("-r", "--recursive", action="store_true",
-                        help="Watch path recursively.")
+                        help="Watch path/s recursively.")
     parser.add_argument("--watch-moved", action="store_true",
                         help="Watch file system for 'moved' events.")
     parser.add_argument("--watch-created", action="store_true",
@@ -145,7 +146,7 @@ def main():
         parser.error("Must specify either -p, --programs or -a, --any-program.")
     for path in args.paths:
         if not(os.path.exists(path)):
-            parser.error("All paths must be valid.")
+            parser.error("Path {} does not exits.".format(path))
     if not(args.watch_moved or args.watch_created or args.watch_deleted or args.watch_modified or args.watch_any):
         parser.error("Must specify which event/s to watch.")
     if args.files_only and args.dirs_only:
@@ -167,7 +168,7 @@ def main():
             args.watch_moved, args.watch_created, args.watch_deleted, args.watch_modified)
 
     fseventwatcher = FSEventWatcher(
-        rpc, args.programs or [], args.any_program, args.path, args.recursive, fs_event_handler)
+        rpc, args.programs or [], args.any_program, args.paths, args.recursive, fs_event_handler)
     fseventwatcher.runforever()
 
 
