@@ -58,13 +58,13 @@ class PollableFileSystemEventHandler(FileSystemEventHandler):
 
 
 class FSEventWatcher(object):
-    def __init__(self, rpc, programs, any_program, fs_event_handler, path, recursive):
+    def __init__(self, rpc, programs, any_program, path, recursive, fs_event_handler):
         self.rpc = rpc
         self.programs = programs
         self.any_program = any_program
-        self.fs_event_handler = fs_event_handler
         self.path = path
         self.recursive = recursive
+        self.fs_event_handler = fs_event_handler
         self.stdin = sys.stdin
         self.stdout = sys.stdout
         self.stderr = sys.stderr
@@ -167,7 +167,7 @@ def main():
             args.watch_moved, args.watch_created, args.watch_deleted, args.watch_modified)
 
     fseventwatcher = FSEventWatcher(
-        rpc, args.programs or [], args.any_program, fs_event_handler, args.path, args.recursive)
+        rpc, args.programs or [], args.any_program, args.path, args.recursive, fs_event_handler)
     fseventwatcher.runforever()
 
 
