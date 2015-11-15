@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from __future__ import print_function
-from collections import namedtuple
 import sys
 import threading
 try:
@@ -15,16 +14,13 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 
-WatchedFileSystemEvents = namedtuple(
-    "WatchFileSystemEvents",
-    ("moved", "created", "deleted", "modified")
-)
-
-
 class PollableFileSystemEventHandler(FileSystemEventHandler):
-    def __init__(self, watched_events):
+    def __init__(self, watch_moved, watch_created, watch_deleted, watch_modified):
         super(PollableFileSystemEventHandler, self).__init__()
-        self.watched_events = watched_events
+        self.watch_moved = watch_moved
+        self.watch_created = watch_created
+        self.watch_deleted = watch_deleted
+        self.watch_modified = watch_modified
         self._activity_occurred = False
         self._lock = threading.Lock()
 
@@ -42,33 +38,33 @@ class PollableFileSystemEventHandler(FileSystemEventHandler):
 
     def on_moved(self, event):
         super(PollableFileSystemEventHandler, self).on_moved(event)
-        if self.watched_events.moved:
+        if self.watch_moved:
             self.mark_activity_occurred()
 
     def on_created(self, event):
         super(PollableFileSystemEventHandler, self).on_created(event)
-        if self.watched_events.created:
+        if self.watch_created:
             self.mark_activity_occurred()
 
     def on_deleted(self, event):
         super(PollableFileSystemEventHandler, self).on_deleted(event)
-        if self.watched_events.deleted:
+        if self.watch_deleted:
             self.mark_activity_occurred()
 
     def on_modified(self, event):
         super(PollableFileSystemEventHandler, self).on_modified(event)
-        if self.watched_events.modified:
+        if self.watch_modified:
             self.mark_activity_occurred()
 
 
 class FSEventWatcher(object):
-    def __init__(self, rpc, programs, any, watch_events, path, recursive):
+    def __init__(self, rpc, programs, any_program, fs_event_handler, path, recursive):
         self.rpc = rpc
         self.programs = programs
-        self.any = any
+        self.any_program = any_program
+        self.fs_event_handler = fs_event_handler
         self.path = path
         self.recursive = recursive
-        self.fs_event_handler = PollableFileSystemEventHandler(watch_events)
         self.stdin = sys.stdin
         self.stdout = sys.stdout
         self.stderr = sys.stderr
@@ -84,7 +80,7 @@ class FSEventWatcher(object):
             for spec in specs:
                 name = spec["name"]
                 namespec = make_namespec(spec["group"], name)
-                if self.any or name in waiting or namespec in waiting:
+                if self.any_program or name in waiting or namespec in waiting:
                     if spec["state"] is ProcessStates.RUNNING:
                         print("Restarting process: {}.".format(namespec), file=self.stderr)
                         try:
@@ -123,7 +119,7 @@ def main():
     import os
     parser = argparse.ArgumentParser("Supervisor event listener.")
     parser.add_argument("-p", "--programs", type=str, nargs="*", metavar="PROGRAM")
-    parser.add_argument("-a", "--any", action="store_true")
+    parser.add_argument("-a", "--any-program", action="store_true")
     parser.add_argument("-f", "--paths", type=str, nargs="+", metavar="PATH", required=True)
     parser.add_argument("-r", "--recursive", action="store_true")
     parser.add_argument("--watch-moved", action="store_true")
@@ -136,8 +132,8 @@ def main():
     parser.add_argument("--regex")
     parser.add_argument("--dither", type=int)
     args = parser.parse_args()
-    if not(args.programs or args.any):
-        parser.error("Must specify either -p, --programs or -a, --any.")
+    if not(args.programs or args.any_program):
+        parser.error("Must specify either -p, --programs or -a, --any-program.")
     for path in args.paths:
         if not(os.path.exists(path)):
             parser.error("All paths must be valid.")
@@ -156,13 +152,15 @@ def main():
             raise
 
     if args.watch_all:
-        watch_events = WatchedFileSystemEvents(True, True, True, True)
+        fs_event_handler = PollableFileSystemEventHandler(True, True, True, True)
     else:
-        watch_events = WatchedFileSystemEvents(
+        fs_event_handler = PollableFileSystemEventHandler(
             args.watch_moved, args.watch_created, args.watch_deleted, args.watch_modified
         )
 
-    fseventwatcher = FSEventWatcher(rpc, args.programs or [], args.any, watch_events, args.path, args.recursive)
+    fseventwatcher = FSEventWatcher(
+        rpc, args.programs or [], args.any_program, fs_event_handler, args.path, args.recursive
+    )
     fseventwatcher.runforever()
 
 
