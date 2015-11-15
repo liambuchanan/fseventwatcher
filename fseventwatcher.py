@@ -2,6 +2,8 @@
 from __future__ import print_function
 import sys
 import threading
+import time
+import random
 try:
     import xmlrpc.client as xmlrpclib
 except ImportError:
@@ -58,13 +60,14 @@ class PollableFileSystemEventHandler(FileSystemEventHandler):
 
 
 class FSEventWatcher(object):
-    def __init__(self, rpc, programs, any_program, paths, recursive, fs_event_handler):
+    def __init__(self, rpc, programs, any_program, paths, recursive, fs_event_handler, dither_max):
         self.rpc = rpc
         self.programs = programs
         self.any_program = any_program
         self.paths = paths
         self.recursive = recursive
         self.fs_event_handler = fs_event_handler
+        self.dither_max = dither_max
         self.stdin = sys.stdin
         self.stdout = sys.stdout
         self.stderr = sys.stderr
@@ -109,6 +112,8 @@ class FSEventWatcher(object):
             headers, payload = childutils.listener.wait(self.stdin, self.stdout)
             if (headers["eventname"].startswith("TICK") and
                     self.fs_event_handler.unmark_activity_occurred()):
+                if self.dither_max is not None:
+                    time.sleep(random.randint(0, self.dither_max))
                 self._restart_processes()
             childutils.listener.ok(self.stdout)
 
@@ -137,10 +142,11 @@ def main():
                         help="Watch file system for 'modified' events.")
     parser.add_argument("--watch-any", action="store_true",
                         help="Watch file system for any event")
+    parser.add_argument("--dither", type=int, metavar="DITHER_MAX", dest="dither_max",
+                        help="Add dither before restarting processes.")
     # parser.add_argument("--files-only", action="store_true")
     # parser.add_argument("--dirs-only", action="store_true")
     # parser.add_argument("--regex")
-    # parser.add_argument("--dither", type=int)
     args = parser.parse_args()
     if not(args.programs or args.any_program):
         parser.error("Must specify either -p, --programs or -a, --any-program.")
@@ -148,9 +154,9 @@ def main():
         if not(os.path.exists(path)):
             parser.error("Path {} does not exits.".format(path))
     if not(args.watch_moved or args.watch_created or args.watch_deleted or args.watch_modified or args.watch_any):
-        parser.error("Must specify which event/s to watch.")
-    if args.files_only and args.dirs_only:
-        parser.error("Must specify one/none of --files-only and --dirs-only.")
+        parser.error("Must specify which file system event/s to watch.")
+    # if args.files_only and args.dirs_only:
+    #     parser.error("Must specify one/none of --files-only and --dirs-only.")
 
     try:
         rpc = childutils.getRPCInterface(os.environ)
@@ -168,7 +174,7 @@ def main():
             args.watch_moved, args.watch_created, args.watch_deleted, args.watch_modified)
 
     fseventwatcher = FSEventWatcher(
-        rpc, args.programs or [], args.any_program, args.paths, args.recursive, fs_event_handler)
+        rpc, args.programs or [], args.any_program, args.paths, args.recursive, fs_event_handler, args.dither_max)
     fseventwatcher.runforever()
 
 
