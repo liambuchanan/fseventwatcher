@@ -117,27 +117,38 @@ class FSEventWatcher(object):
 def main():
     import argparse
     import os
-    parser = argparse.ArgumentParser("Supervisor event listener.")
-    parser.add_argument("-p", "--programs", type=str, nargs="*", metavar="PROGRAM")
-    parser.add_argument("-a", "--any-program", action="store_true")
-    parser.add_argument("-f", "--paths", type=str, nargs="+", metavar="PATH", required=True)
-    parser.add_argument("-r", "--recursive", action="store_true")
-    parser.add_argument("--watch-moved", action="store_true")
-    parser.add_argument("--watch-created", action="store_true")
-    parser.add_argument("--watch-deleted", action="store_true")
-    parser.add_argument("--watch-modified", action="store_true")
-    parser.add_argument("--watch-all", action="store_true")
-    parser.add_argument("--files-only", action="store_true")
-    parser.add_argument("--dirs-only", action="store_true")
-    parser.add_argument("--regex")
-    parser.add_argument("--dither", type=int)
+    parser = argparse.ArgumentParser("fseventwatcher",
+                                     description="Supervisor TICK event listener which restarts processes "
+                                     "if file system changes occur between ticks.")
+    parser.add_argument("-p", "--programs", type=str, nargs="*", metavar="PROGRAM",
+                        help="Supervisor process name/s to be restarted if in RUNNING state.")
+    parser.add_argument("-a", "--any-program", action="store_true",
+                        help="Restart any supervisor processes in RUNNING state.")
+    parser.add_argument("-f", "--paths", type=str, nargs="+", metavar="PATH", required=True,
+                        help="Path to watch for file system events.")
+    parser.add_argument("-r", "--recursive", action="store_true",
+                        help="Watch path recursively.")
+    parser.add_argument("--watch-moved", action="store_true",
+                        help="Watch file system for 'moved' events.")
+    parser.add_argument("--watch-created", action="store_true",
+                        help="Watch file system for 'created' events.")
+    parser.add_argument("--watch-deleted", action="store_true",
+                        help="Watch file system for 'deleted' events.")
+    parser.add_argument("--watch-modified", action="store_true",
+                        help="Watch file system for 'modified' events.")
+    parser.add_argument("--watch-any", action="store_true",
+                        help="Watch file system for any event")
+    # parser.add_argument("--files-only", action="store_true")
+    # parser.add_argument("--dirs-only", action="store_true")
+    # parser.add_argument("--regex")
+    # parser.add_argument("--dither", type=int)
     args = parser.parse_args()
     if not(args.programs or args.any_program):
         parser.error("Must specify either -p, --programs or -a, --any-program.")
     for path in args.paths:
         if not(os.path.exists(path)):
             parser.error("All paths must be valid.")
-    if not(args.watch_moved or args.watch_created or args.watch_deleted or args.watch_modified or args.watch_all):
+    if not(args.watch_moved or args.watch_created or args.watch_deleted or args.watch_modified or args.watch_any):
         parser.error("Must specify which event/s to watch.")
     if args.files_only and args.dirs_only:
         parser.error("Must specify one/none of --files-only and --dirs-only.")
@@ -151,7 +162,7 @@ def main():
         else:
             raise
 
-    if args.watch_all:
+    if args.watch_any:
         fs_event_handler = PollableFileSystemEventHandler(True, True, True, True)
     else:
         fs_event_handler = PollableFileSystemEventHandler(
