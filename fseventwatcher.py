@@ -132,31 +132,16 @@ def main():
                         help="Path to watch for file system events.")
     parser.add_argument("-r", "--recursive", action="store_true",
                         help="Watch path/s recursively.")
-    parser.add_argument("--watch-moved", action="store_true",
-                        help="Watch file system for 'moved' events.")
-    parser.add_argument("--watch-created", action="store_true",
-                        help="Watch file system for 'created' events.")
-    parser.add_argument("--watch-deleted", action="store_true",
-                        help="Watch file system for 'deleted' events.")
-    parser.add_argument("--watch-modified", action="store_true",
-                        help="Watch file system for 'modified' events.")
-    parser.add_argument("--watch-any", action="store_true",
-                        help="Watch file system for any event")
+    parser.add_argument("--watched-events", type=str, nargs="*", choices=["moved", "created", "deleted", "modified"],
+                        help="Watch file system for specified events (by default all events will be watched).")
     parser.add_argument("--dither", type=int, metavar="DITHER_MAX", dest="dither_max",
                         help="Add dither before restarting processes.")
-    # parser.add_argument("--files-only", action="store_true")
-    # parser.add_argument("--dirs-only", action="store_true")
-    # parser.add_argument("--regex")
     args = parser.parse_args()
     if not(args.programs or args.any_program):
         parser.error("Must specify either -p, --programs or -a, --any-program.")
     for path in args.paths:
         if not(os.path.exists(path)):
             parser.error("Path {} does not exits.".format(path))
-    if not(args.watch_moved or args.watch_created or args.watch_deleted or args.watch_modified or args.watch_any):
-        parser.error("Must specify which file system event/s to watch.")
-    # if args.files_only and args.dirs_only:
-    #     parser.error("Must specify one/none of --files-only and --dirs-only.")
 
     try:
         rpc = childutils.getRPCInterface(os.environ)
@@ -167,11 +152,12 @@ def main():
         else:
             raise
 
-    if args.watch_any:
-        fs_event_handler = PollableFileSystemEventHandler(True, True, True, True)
-    else:
+    if args.watched_events:
         fs_event_handler = PollableFileSystemEventHandler(
-            args.watch_moved, args.watch_created, args.watch_deleted, args.watch_modified)
+            "moved" in args.watched_events, "created" in args.watched_events,
+            "deleted" in args.watched_events, "modified" in args.watched_events)
+    else:
+        fs_event_handler = PollableFileSystemEventHandler(True, True, True, True)
 
     fseventwatcher = FSEventWatcher(
         rpc, args.programs or [], args.any_program, args.paths, args.recursive, fs_event_handler, args.dither_max)
